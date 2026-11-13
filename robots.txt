@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://andyaiwebsites.github.io/minislice/sitemap.xml
