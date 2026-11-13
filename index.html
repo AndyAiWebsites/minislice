@@ -1,8 +1,20 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MiniSlice · free slicer for small printers</title>
-<meta name="description" content="MiniSlice turns 3D models into G-code and can drive pen drawing. Unofficial and not affiliated with Toybox.">
+<title>MiniSlice — free Toybox alternative slicer for small 3D printers</title>
+<meta name="description" content="MiniSlice is a free, browser-based Toybox alternative slicer for small 3D printers (75 × 80 × 90 mm plate). Turn STL files into G-code or pen drawings. Nothing is uploaded.">
+<link rel="canonical" href="https://andyaiwebsites.github.io/minislice/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MiniSlice">
+<meta property="og:title" content="MiniSlice — free Toybox alternative slicer">
+<meta property="og:description" content="A free slicer that runs in your browser. STL to G-code, plus pen drawing, for small 3D printers with a 75 × 80 × 90 mm plate.">
+<meta property="og:url" content="https://andyaiwebsites.github.io/minislice/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MiniSlice — free Toybox alternative slicer">
+<meta name="twitter:description" content="A free, browser-based slicer for small 3D printers. STL to G-code, plus pen drawing. Nothing is uploaded.">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"MiniSlice","url":"https://andyaiwebsites.github.io/minislice/","description":"Free browser-based slicer for small 3D printers, an alternative to Toybox. Slices STL files to G-code and supports pen drawing.","applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript and WebGL","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://opensource.org/licenses/MIT"}
+</script>
 <style>
 :root{--paper:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#6f6a62;--line:#e4e0d8;--accent:#0f766e;--accent2:#14b8a6;--plate:#e8f0ee;--danger:#b42318;--ok:#067647;--radius:10px;box-sizing:border-box}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#111213;--panel:#1a1c1e;--ink:#f0eee8;--muted:#a09b93;--line:#2c2f32;--plate:#14201f;color-scheme:dark}}
@@ -153,7 +165,7 @@ summary::after{content:'▾';float:right;color:var(--muted)}details:not([open]) 
  </section>
 </div>
 
-<footer class="legal">MiniSlice is an independent, unofficial project. It is not made by, endorsed by, sponsored by, or affiliated with Toybox or its owners. Toybox is named only to say which printer size this plate profile is for. Heated parts and moving machines can cause harm: watch every print, check the first layers, and you are responsible for the result.</footer>
+<footer class="legal">MiniSlice is an independent, unofficial project. It is not made by, endorsed by, sponsored by, or affiliated with Toybox or its owners. Toybox is named only to say which printer size this plate profile is for. Heated parts and moving machines can cause harm: watch every print, check the first layers, and you are responsible for the result. <a href="about.html">About MiniSlice, FAQ, and why it is a Toybox alternative</a>.</footer>
 
 <div id="help" class="modal" hidden>
  <div class="sheet">

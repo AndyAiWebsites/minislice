@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MiniSlice: a free Toybox alternative slicer that runs in your browser</title>
+<meta name="description" content="Looking for a Toybox alternative slicer? MiniSlice is free, runs in your browser, makes G-code for small 3D printers with a 75 × 80 × 90 mm plate, and never uploads your models.">
+<link rel="canonical" href="https://andyaiwebsites.github.io/minislice/about.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="MiniSlice">
+<meta property="og:title" content="MiniSlice: a free Toybox alternative slicer">
+<meta property="og:description" content="Free browser-based slicing for small 3D printers, plus pen drawing. No account, no upload, no cost.">
+<meta property="og:url" content="https://andyaiwebsites.github.io/minislice/about.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is MiniSlice a free alternative to Toybox?","acceptedAnswer":{"@type":"Answer","text":"Yes. MiniSlice is a free, independent slicer that runs in the browser and targets the same small build volume as the Toybox Alpha 2: 75 × 80 × 90 mm. It is not affiliated with Toybox."}},
+{"@type":"Question","name":"Do I need an account or an install?","acceptedAnswer":{"@type":"Answer","text":"No. Open the page in a modern browser and use it. There is no sign-up, no install and no cost, and models are processed on your own computer."}},
+{"@type":"Question","name":"Can I import the G-code into the Toybox app?","acceptedAnswer":{"@type":"Answer","text":"Toybox's help pages say the Creator Space can import STL, OBJ and G-code files. Slice in MiniSlice, save the .gcode file, then use Import in the Toybox app or website. Toybox can change its screens, so look for the Import option if it moves."}},
+{"@type":"Question","name":"Does MiniSlice support pen drawing?","acceptedAnswer":{"@type":"Answer","text":"Yes. Switch Mode to Pen drawing and import an image. MiniSlice traces it into pen lines that never extrude filament and never heat the nozzle or bed."}},
+{"@type":"Question","name":"Is my model uploaded to a server?","acceptedAnswer":{"@type":"Answer","text":"No. Slicing happens in your browser. MiniSlice loads its 3D library from a public CDN, but your model files stay on your device."}}]}
+</script>
+<style>
+:root{--paper:#f6f5f1;--panel:#fff;--ink:#1c1b19;--muted:#6f6a62;--line:#e4e0d8;--accent:#0f766e;--radius:10px}
+@media (prefers-color-scheme:dark){:root{--paper:#111213;--panel:#1a1c1e;--ink:#f0eee8;--muted:#a09b93;--line:#2c2f32;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+header .mark{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700}
+header b{font-size:16px}
+header .grow{flex:1}
+a{color:var(--accent)}
+.cta{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;padding:9px 16px;border-radius:8px;font-weight:600}
+main{max-width:760px;margin:0 auto;padding:28px 20px 48px}
+h1{font-size:30px;line-height:1.25;margin:0 0 12px}
+h2{font-size:20px;margin:28px 0 8px}
+h3{font-size:16px;margin:18px 0 4px}
+p,li{color:var(--ink)}
+.lead{font-size:18px;color:var(--muted)}
+details{border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;margin:8px 0;background:var(--panel)}
+summary{cursor:pointer;font-weight:600}
+.legal{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding:14px 20px;margin-top:12px}
+.note{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px}
+</style>
+</head>
+<body>
+<header><div class="mark">M</div><b>MiniSlice</b><div class="grow"></div><a class="cta" href="index.html">Open the slicer</a></header>
+<main>
+<h1>A free Toybox alternative slicer that runs in your browser</h1>
+<p class="lead">MiniSlice turns 3D models into G-code for small desktop printers. It is free, needs no account, and works on the same 75 × 80 × 90 mm build volume as the Toybox Alpha 2. Models are never uploaded.</p>
+<p><a class="cta" href="index.html">Start slicing free</a></p>
+
+<h2>Why people look for a Toybox alternative</h2>
+<p>Small printers are great for quick parts, but most slicers assume a much larger bed. Their default profiles, previews and supports are built for machines that have room to spare. MiniSlice starts from the small plate instead: the bed is 75 × 80 × 90 mm, so the preview, the warnings and the generated G-code all match the machine you actually own.</p>
+<p>It also avoids the usual friction of online tools. There is nothing to install, no account to create, and no upload step. Open the page, drop in an STL, and press Slice.</p>
+
+<h2>What MiniSlice does</h2>
+<ul>
+<li><b>Slices STL files to G-code</b> with layer height, walls, top and bottom layers, and infill you can change.</li>
+<li><b>Supports</b> in line or tree style, with a configurable gap under overhangs.</li>
+<li><b>Pen drawing mode</b> that traces a PNG, JPEG, WebM or MP4 into pen lines. No filament is extruded and the heaters stay off.</li>
+<li><b>Placement tools</b> to move, lift, resize, rotate, center and arrange models on the plate, with a warning when something hangs off the edge.</li>
+<li><b>Layer preview</b> before you save, so you can check the first layers and the overall shape.</li>
+<li><b>Runs offline after loading</b>, because the work happens in your browser rather than on a server.</li>
+</ul>
+
+<h2>Using MiniSlice with a Toybox printer</h2>
+<ol>
+<li>Open MiniSlice, add a shape or import your STL, and position it on the plate.</li>
+<li>Press <b>Slice</b> and check the preview and the status line.</li>
+<li>Press <b>Save G-code</b>. The file downloads as <code>.gcode</code>; if your browser names it <code>.txt</code>, rename it.</li>
+<li>Open the Toybox app or website, sign in to the account linked to the printer, and use <b>Import</b> to load the file.</li>
+<li>Confirm the model sits on the plate, start the print, and stay with the printer for the first layers.</li>
+</ol>
+<p class="note">This guide is not from Toybox. It follows Toybox's public help pages, which say the Creator Space can import STL, OBJ and G-code files. Toybox can change its screens at any time; if a button moves, look for the Import option.</p>
+
+<h2>Questions</h2>
+<details><summary>Is MiniSlice really free?</summary><p>Yes. There is no price, subscription or account. The project is open source under the MIT license.</p></details>
+<details><summary>Do my models get uploaded anywhere?</summary><p>No. Slicing and tracing run in your browser. The page loads its 3D library from a public CDN, but your model files stay on your device.</p></details>
+<details><summary>Which printers does it fit?</summary><p>The plate profile matches a 75 × 80 × 90 mm build volume, the same size class as the Toybox Alpha 2. Check your own printer's build volume before printing.</p></details>
+<details><summary>Can it make a file that is too big to import?</summary><p>Possibly. Try Draft quality (0.3 mm layers), fewer walls, or a smaller model if a host app rejects the file.</p></details>
+<details><summary>Is MiniSlice made by Toybox?</summary><p>No. MiniSlice is an independent, unofficial project. It is not made by, endorsed by, sponsored by, or affiliated with Toybox or its owners. Toybox is named only to say which build size the plate profile matches. Toybox names are trademarks of their owners.</p></details>
+
+<h2>Safety</h2>
+<p>Heated parts and moving machines can cause harm. Keep the printer in sight while it heats and prints, check the first layers, and stop the print if the model lifts off the plate or filament stops coming out. You are responsible for the result.</p>
+<p><a class="cta" href="index.html">Open MiniSlice</a></p>
+</main>
+<footer class="legal">MiniSlice is an independent, unofficial project. Not affiliated with Toybox. <a href="index.html">Back to the slicer</a>.</footer>
+</body>
+</html>
