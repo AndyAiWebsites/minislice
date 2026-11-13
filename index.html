@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MiniSlice · free slicer for small printers</title>
+<meta name="description" content="MiniSlice turns 3D models into G-code and can drive pen drawing. Unofficial and not affiliated with Toybox.">
+<style>
+:root{--paper:#f6f5f1;--panel:#ffffff;--ink:#1c1b19;--muted:#6f6a62;--line:#e4e0d8;--accent:#0f766e;--accent2:#14b8a6;--plate:#e8f0ee;--danger:#b42318;--ok:#067647;--radius:10px;box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#111213;--panel:#1a1c1e;--ink:#f0eee8;--muted:#a09b93;--line:#2c2f32;--plate:#14201f;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#111213;--panel:#1a1c1e;--ink:#f0eee8;--muted:#a09b93;--line:#2c2f32;--plate:#14201f;color-scheme:dark}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:grid;grid-template-rows:auto minmax(0,1fr) auto;height:100vh}
+button,select,input,textarea{font:inherit;color:var(--ink)}
+button{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--accent2)}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;padding:9px 18px}
+button.primary:hover:not(:disabled){background:#0c645e}
+button.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+button.sm{padding:5px 9px;font-size:12px}
+select,input[type=number],textarea{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%}
+textarea{min-height:88px;font:12px ui-monospace,Menlo,Consolas,monospace}
+.bar{display:flex;align-items:center;gap:8px;padding:9px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.mark{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:800}
+.name b{display:block;font-size:15px;letter-spacing:.01em}.name span{color:var(--muted);font-size:12px}
+.grow{flex:1}
+.main{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:0}
+.panel{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:12px 14px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tab{background:none;border:0;border-bottom:2px solid transparent;border-radius:0;padding:8px 10px;color:var(--muted);font-weight:600}
+.tab.on{color:var(--ink);border-color:var(--accent)}
+h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:16px 0 8px}
+.btn{display:block;text-align:center;background:var(--accent);color:#fff;border-radius:9px;padding:10px;font-weight:700;cursor:pointer}
+.shapes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.shapes button{padding:9px 4px;font-size:12px}
+.card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;cursor:pointer;background:var(--paper)}
+.card:hover{border-color:var(--accent2)}
+.card.on{border-color:var(--accent);box-shadow:0 0 0 3px rgba(20,184,166,.18);background:var(--panel)}
+.row2{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.meta{color:var(--muted);font-size:12px}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.bad{color:var(--danger);font-size:12px;font-weight:600}
+.pick{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:9px 0}
+.pick>span{font-weight:600;font-size:13px}
+.pick select{width:auto;min-width:170px}
+.hint{color:var(--muted);font-size:12px;margin:8px 0}
+.toggle{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px;margin:14px 0 6px;cursor:pointer}
+details{border-bottom:1px solid var(--line);padding:2px 0 8px}
+summary{cursor:pointer;font-weight:600;padding:9px 0;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:'▾';float:right;color:var(--muted)}details:not([open]) summary::after{content:'▸'}
+.frow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0}
+.frow label{flex:1;font-size:13px}.frow input{width:90px}.frow small{color:var(--muted);width:34px}
+.stage{display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-height:0;padding:10px 12px;gap:10px}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.view{position:relative;min-height:0;border-radius:var(--radius);background:var(--plate);overflow:hidden}
+#v3{position:absolute;inset:0;touch-action:none;cursor:grab}#v3 canvas{width:100%;height:100%;display:block}
+#cv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:100%;max-width:100%;aspect-ratio:1}
+.bottom{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;flex-wrap:wrap}
+#layerSlider{flex:0 1 260px}
+#status{flex:1;min-width:200px;color:var(--ink)}
+.legal{font-size:11px;color:var(--muted);padding:6px 16px;border-top:1px solid var(--line);background:var(--panel)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:grid;place-items:center;z-index:50;padding:16px}
+.sheet{background:var(--panel);max-width:600px;max-height:88vh;overflow:auto;border-radius:14px;padding:20px 22px;line-height:1.55}
+.sheet h2{font-size:17px;margin:0 0 8px}.sheet h4{margin:16px 0 4px;font-size:13px}
+.sheet kbd{background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px}
+@media(max-width:860px){body{height:auto}.main{grid-template-columns:1fr}.panel{border-right:0;border-bottom:1px solid var(--line);max-height:50vh}.view{min-height:65vh}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+<header class="bar">
+ <div class="mark">M</div>
+ <div class="name"><b>MiniSlice</b><span>free slicer for small desktop printers</span></div>
+ <div class="grow"></div>
+ <button id="helpBtn">Help</button>
+ <button id="saveBtn" disabled>Save G-code</button>
+ <button id="copyBtn" disabled>Copy</button>
+ <button class="primary" id="sliceBtn" disabled title="Turn your models into printer instructions">Slice</button>
+</header>
+
+<div class="main">
+ <aside class="panel">
+  <div class="tabs"><button class="tab on" data-tab="tabModels">Models</button><button class="tab" data-tab="tabSettings">Settings</button></div>
+
+  <div id="tabModels">
+   <label class="btn" id="importLabel"><span id="importText">Import STL file</span><input id="file" type="file" accept=".stl" hidden></label>
+   <h3>Shapes</h3>
+   <div class="shapes">
+    <button data-s="cube">Cube</button><button data-s="cyl">Cylinder</button><button data-s="sph">Sphere</button>
+    <button data-s="cone">Cone</button><button data-s="pyr">Pyramid</button>
+   </div>
+   <h3>Models on the plate</h3>
+   <div id="objectList"></div>
+   <p class="hint">Click a model to select it. Use Lift up, Lower, and Turn buttons under it, or drag the handles in the 3D view: red sets width, green sets length, blue sets height, the grey arrow lifts, and the green ring turns. Easiest way to turn: tap Turn 90° for a quarter turn, Flip X or Flip Y to tip it over, or the 15° buttons for small changes. Keys: Page Up/Down lift, R turns 90°, [ and ] turn 15°.</p>
+  </div>
+
+  <div id="tabSettings" hidden>
+   <div class="pick"><span>Mode</span><select id="modeSel"><option value="0">Print</option><option value="1">Pen drawing</option></select></div>
+   <div id="printOnly">
+    <div class="pick"><span>Quality</span><select id="qualSel"></select></div>
+    <div class="pick"><span>Speed</span><select id="speedSel"></select></div>
+    <p class="hint" id="speedNote"></p>
+    <div class="pick"><span>Supports</span><select id="supSel"><option value="off">Off</option><option value="lines">Lines</option><option value="tree">Tree (recommended)</option></select></div>
+    <div class="pick"><span>Purge</span><select id="purgeSel"><option value="0">Off</option><option value="1">At start</option><option value="2">At end</option><option value="3">Start and end</option></select></div>
+   </div>
+   <div id="penOnly" hidden>
+    <div class="pick"><span>Drawing</span><select id="penStyleSel"><option value="1">Outline only</option><option value="0">Outline and fill</option><option value="2">Fill only</option></select></div>
+    <div id="picBox" hidden>
+     <div class="pick"><span id="picName"></span><button class="sm" id="picRemove">Remove</button></div>
+     <div class="pick"><span>Picture style</span><select id="picStyleSel"><option value="0">Sketch</option><option value="1">Outline</option></select></div>
+    </div>
+    <p class="hint">No filament comes out in pen mode and the heaters stay off. Home the printer and set Pen down Z so the tip just touches the paper.</p>
+   </div>
+
+   <label class="toggle"><input type="checkbox" id="advToggle"> Show every setting</label>
+   <div id="advanced" hidden>
+    <div id="advancedFields"></div>
+    <div id="gcodeBox">
+     <h3>Start G-code</h3><textarea id="sg"></textarea>
+     <h3>End G-code</h3><textarea id="eg"></textarea>
+    </div>
+    <p class="hint"><button class="sm" id="resetBtn">Reset all settings</button></p>
+   </div>
+  </div>
+ </aside>
+
+ <section class="stage">
+  <div class="toolbar">
+   <button id="undoBtn" disabled title="Undo (Ctrl+Z)">Undo</button>
+   <button id="redoBtn" disabled title="Redo (Ctrl+Y)">Redo</button>
+   <span class="sep"></span>
+   <button id="duplicateBtn" disabled title="Duplicate (Ctrl+D)">Duplicate</button>
+   <button id="centerBtn" disabled>Center</button>
+   <button id="arrangeBtn" disabled>Arrange all</button>
+   <button id="deleteBtn" disabled title="Delete">Delete</button>
+   <span class="grow"></span>
+   <button id="view3" class="on">3D view</button>
+   <button id="viewLayers" disabled>Layers</button>
+   <button id="viewTop">Top</button>
+   <button id="viewAngle">Angle</button>
+  </div>
+  <div class="view" id="view">
+   <div id="v3"></div>
+   <canvas id="cv" width="800" height="800" hidden></canvas>
+  </div>
+  <div class="bottom">
+   <span id="fitInfo"></span>
+   <input type="range" id="layerSlider" hidden>
+   <span id="status"></span>
+  </div>
+ </section>
+</div>
+
+<footer class="legal">MiniSlice is an independent, unofficial project. It is not made by, endorsed by, sponsored by, or affiliated with Toybox or its owners. Toybox is named only to say which printer size this plate profile is for. Heated parts and moving machines can cause harm: watch every print, check the first layers, and you are responsible for the result.</footer>
+
+<div id="help" class="modal" hidden>
+ <div class="sheet">
+  <h2>How MiniSlice works</h2>
+  <h4>Print in four steps</h4>
+  <ol>
+   <li>Add a shape or import an STL file in the Models tab.</li>
+   <li>Click a model and drag its handles to move, lift, resize or turn it. Red, green and blue handles follow the X, Y and Z directions.</li>
+   <li>Press <b>Slice</b>. The preview shows the layers. Nothing is sliced while a model is outside the plate.</li>
+   <li>Press <b>Save G-code</b>, then import the file into your printer's app.</li>
+  </ol>
+  <h4>Pen drawing</h4>
+  <p>Set Mode to Pen drawing, then import a PNG, JPEG, WebM or MP4. Pictures are traced into pen lines. Pen files never extrude filament and never heat the nozzle or bed.</p>
+  <h4>Safety</h4>
+  <p>Read the first layers of every print. Keep the printer in sight while it heats and prints. Temperatures and speeds are limited to safe ranges, but you should still check every value you change.</p>
+  <h4>Keyboard shortcuts</h4>
+  <p><kbd>Ctrl</kbd>+<kbd>Z</kbd> undo · <kbd>Ctrl</kbd>+<kbd>Y</kbd> redo · <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate · <kbd>Delete</kbd> remove · <kbd>Esc</kbd> deselect</p>
+  <h4>Compatibility and disclaimer</h4>
+  <p>The plate profile matches the 75 × 80 × 90 mm build size of the Toybox Alpha 2. MiniSlice is an independent, unofficial project. It is not made by, endorsed by, sponsored by, or affiliated with Toybox or its owners, and Toybox names are trademarks of their owners.</p>
+  <p style="text-align:right"><button class="primary" id="helpClose">Close</button></p>
+ </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const fmt=v=>Math.round(v*10)/10;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KEY='minislice-v1';
+
+// ---------- settings: [key, label, default, min, max, unit]
+const GROUPS=[
+['Layers',[['layerH','Layer height',.2,.05,.6,'mm'],['firstH','First layer height',.2,.05,.6,'mm'],['lw','Line width',.5,.2,1.2,'mm'],['walls','Walls',2,0,6,''],['bot','Solid bottom layers',3,0,20,''],['top','Solid top layers',3,0,20,''],['infill','Infill',15,0,100,'%']]],
+['Support',[['sup','Supports on (1) or off (0)',1,0,1,''],['supStyle','Support style (0 lines, 1 tree)',1,0,1,''],['supSp','Support spacing',2,.5,10,'mm'],['supGap','Gap under overhang',1,0,5,'layers']]],
+['Temperature',[['nozzle','Nozzle',200,150,260,'°C'],['bed','Bed (0 = none)',0,0,110,'°C'],['fan','Fan',100,0,100,'%'],['fanL','Fan starts at layer',3,1,50,'']]],
+['Speed',[['speed','Print speed',60,5,300,'mm/s'],['fspeed','First layer speed',30,5,120,'mm/s'],['travel','Travel speed',120,10,400,'mm/s'],['maxFlow','Max flow (hotend limit)',12,1,40,'mm³/s'],['minT','Minimum time per layer',0,0,30,'s'],['hop','Z hop on travel (lifts over parts)',.4,0,2,'mm']]],
+['Filament',[['fd','Filament diameter',1.75,1.6,1.9,'mm'],['flow','Flow',100,50,150,'%'],['ret','Retraction',1,0,6,'mm'],['rets','Retract speed',30,5,100,'mm/s']]],
+['Purge',[['purge','Purge (0 off, 1 start, 2 end, 3 both)',1,0,3,''],['plen','Purge amount',30,0,80,'mm']]],
+['Plate',[['bx','Plate X',75,10,300,'mm'],['by','Plate Y',80,10,300,'mm'],['bz','Plate height',90,10,300,'mm'],['gx','G-code shift X',0,-20,20,'mm'],['gy','G-code shift Y',0,-20,20,'mm']]],
+['Pen',[['pen','Pen mode (1 on, 0 off)',0,0,1,''],['penStyle','Pen style (0 outline+fill, 1 outline, 2 fill)',1,0,2,''],['penSpd','Pen draw speed',40,5,200,'mm/s'],['penTravel','Pen move speed',150,10,300,'mm/s'],['penDown','Pen down Z (0 touches paper)',0,-3,3,'mm'],['penUp','Pen up Z',5,1,30,'mm'],['imgW','Picture width',60,10,200,'mm'],['imgSp','Picture line spacing',1,.3,5,'mm'],['imgThr','Picture darkness cutoff',128,1,254,''],['imgMode','Picture style (0 sketch, 1 outline)',0,0,1,''],['imgT','Video frame time',0,0,600,'s']]]
+];
+const DEF={},RANGE={};
+for(const [,items] of GROUPS)for(const [k,,d,a,b] of items){DEF[k]=d;RANGE[k]=[a,b]}
+const S={...DEF};
+
+const QUAL={'Draft (fastest)':{layerH:.3,firstH:.3,lw:.5,walls:2,infill:10},'Standard':{layerH:.2,firstH:.2,lw:.5,walls:2,infill:15},'Fine (slowest)':{layerH:.15,firstH:.15,lw:.4,walls:3,infill:20}};
+const SPEEDS={'Painfully slow (experimental)':{speed:20,fspeed:10,travel:60},'Slow':{speed:35,fspeed:20,travel:90},'Normal':{speed:60,fspeed:30,travel:120},'Fast':{speed:90,fspeed:40,travel:160},'Very fast (experimental)':{speed:120,fspeed:50,travel:200},'DEMON SPEED (ur printer is going to explode)':{speed:180,fspeed:60,travel:250},'GODLY MODE (quality sacrificed)':{speed:250,fspeed:60,travel:300,layerH:.3,firstH:.3,lw:.6,walls:1,infill:10,supSp:4,supGap:0,maxFlow:15}};
+const SPEED_NOTE={'Painfully slow (experimental)':'Very slow, so prints take a long time.','Very fast (experimental)':'Experimental. Watch the first layers.','DEMON SPEED (ur printer is going to explode)':'Experimental. Expect poor quality or skipped layers. The printer will not explode, but stop the print if it sounds wrong.','GODLY MODE (quality sacrificed)':'Speed is limited by Max flow so the filament can keep up. Expect rough, stringy prints.'};
+const START_DEF="; Start (edit to match your printer)\nM140 S{bed}\nM104 S{nozzle}\nM190 S{bed}\nM109 S{nozzle}\nG28\nG90\nM82\nG92 E0";
+const END_DEF="M104 S0\nM140 S0\nM107\nG91\nG1 Z10 F600\nG90\nM84";
+
+// ---------- state
+let OBJ=[],SEL=-1,nid=1,layers=[],PEN=[],DRAW=null,DRAW_SRC=null,DRAWNAME='',gcode='',V=null;
+const HIST={u:[],r:[]};
+
+// ---------- saved settings (on this device only; models are not saved)
+function loadPrefs(){try{if(typeof localStorage==='undefined')return null;const p=JSON.parse(localStorage.getItem(KEY)||'null');if(!p)return null;
+ for(const k in (p.S||{}))if(k in RANGE&&isFinite(p.S[k]))S[k]=clamp(p.S[k],RANGE[k][0],RANGE[k][1]);return p}catch(e){return null}}
+function savePrefs(){try{if(typeof localStorage==='undefined')return;localStorage.setItem(KEY,JSON.stringify({S,start:$('sg').value,end:$('eg').value}))}catch(e){}}
+
+// ---------- undo / redo
+function checkpoint(){HIST.u.push(OBJ.map(o=>({...o})));if(HIST.u.length>80)HIST.u.shift();HIST.r=[]}
+function undo(){if(!HIST.u.length)return;HIST.r.push(OBJ.map(o=>({...o})));OBJ=HIST.u.pop();SEL=-1;changed('Undone.')}
+function redo(){if(!HIST.r.length)return;HIST.u.push(OBJ.map(o=>({...o})));OBJ=HIST.r.pop();SEL=-1;changed('Redone.')}
+
+// ---------- models
+const cubeTris=()=>{const s=10,p=[[-s,-s,0],[s,-s,0],[s,s,0],[-s,s,0],[-s,-s,2*s],[s,-s,2*s],[s,s,2*s],[-s,s,2*s]];
+ const f=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,1,5],[0,5,4],[1,2,6],[1,6,5],[2,3,7],[2,7,6],[3,0,4],[3,4,7]];return new Float32Array(f.flatMap(t=>t.flatMap(i=>p[i])))};
+function lathe(pr,seg){const t=[],P=(r,z,a)=>[r*Math.cos(a),r*Math.sin(a),z];
+ for(let i=0;i<pr.length-1;i++)for(let j=0;j<seg;j++){const a=j/seg*2*Math.PI,b=(j+1)/seg*2*Math.PI,[r0,z0]=pr[i],[r1,z1]=pr[i+1];
+  const A=P(r0,z0,a),B=P(r0,z0,b),C=P(r1,z1,b),D=P(r1,z1,a);if(r0>0)t.push(A,B,C);if(r1>0)t.push(A,C,D)}
+ return new Float32Array(t.flat())}
+const SH={cube:()=>cubeTris(),cyl:()=>lathe([[0,0],[10,0],[10,20],[0,20]],48),
+ sph:()=>lathe(Array.from({length:13},(_,k)=>{const q=k/12*Math.PI;return[+(10*Math.sin(q)).toFixed(6),10-10*Math.cos(q)]}),48),
+ cone:()=>lathe([[0,0],[10,0],[0,20]],48),pyr:()=>lathe([[0,0],[10,0],[0,20]],4)};
+const SHNAME={cube:'Cube',cyl:'Cylinder',sph:'Sphere',cone:'Cone',pyr:'Pyramid'};
+function parse(buf){const dv=new DataView(buf);const n=dv.getUint32(80,true);let a;
+ if(84+n*50===buf.byteLength){a=new Float32Array(n*9);let o=84;for(let i=0;i<n;i++){o+=12;for(let j=0;j<9;j++){a[i*9+j]=dv.getFloat32(o,true);o+=4}o+=2}}
+ else{const t=new TextDecoder().decode(buf),r=/vertex\s+(\S+)\s+(\S+)\s+(\S+)/g,v=[];let m;while(m=r.exec(t))v.push(+m[1],+m[2],+m[3]);a=new Float32Array(v)}
+ return a}
+const newObj=(name,a)=>({id:nid++,name,a,sx:100,sy:100,sz:100,lift:0,rx:0,ry:0,rz:0,x:0,y:0});
+
+function place(o){const n=o.a.length,a=new Float32Array(n);
+ const kx=o.sx/100,ky=o.sy/100,kz=o.sz/100;
+ const rx=o.rx*Math.PI/180,ry=o.ry*Math.PI/180,rz=o.rz*Math.PI/180;
+ const cX=Math.cos(rx),sX=Math.sin(rx),cY=Math.cos(ry),sY=Math.sin(ry),cZ=Math.cos(rz),sZ=Math.sin(rz);
+ for(let i=0;i<n;i+=3){let x=o.a[i]*kx,y=o.a[i+1]*ky,z=o.a[i+2]*kz;
+  let y1=y*cX-z*sX,z1=y*sX+z*cX;y=y1;z=z1;
+  let x1=x*cY+z*sY,z2=-x*sY+z*cY;x=x1;z=z2;
+  let x2=x*cZ-y*sZ,y2=x*sZ+y*cZ;x=x2;y=y2;
+  a[i]=x;a[i+1]=y;a[i+2]=z}
+ let mn=[1e9,1e9,1e9],mx=[-1e9,-1e9,-1e9];
+ for(let i=0;i<n;i++){const c=i%3;mn[c]=Math.min(mn[c],a[i]);mx[c]=Math.max(mx[c],a[i])}
+ const cx=(mn[0]+mx[0])/2,cy=(mn[1]+mx[1])/2,lift=o.lift||0;
+ for(let i=0;i<n;i+=3){a[i]+=S.bx/2+o.x-cx;a[i+1]+=S.by/2+o.y-cy;a[i+2]+=lift-mn[2]}
+ return{a,w:mx[0]-mn[0],d:mx[1]-mn[1],h:mx[2]-mn[2]+lift,cx:S.bx/2+o.x,cy:S.by/2+o.y}}
+function inside(p){return p.cx-p.w/2>=-1e-6&&p.cx+p.w/2<=S.bx+1e-6&&p.cy-p.d/2>=-1e-6&&p.cy+p.d/2<=S.by+1e-6&&p.h<=S.bz+1e-6}
+const dimStr=p=>`${p.w.toFixed(1)} × ${p.d.toFixed(1)} × ${p.h.toFixed(1)} mm`;
+
+function addModel(name,a){if(!a||a.length<9){status('That file has no triangles.');return}
+ checkpoint();const o=newObj(name,a);
+ let x=0;if(OBJ.length){const right=Math.max(...OBJ.map(q=>{const p=place(q);return p.cx+p.w/2}));const w=place({...o,x:0}).w;x=right+3+w/2-S.bx/2}
+ o.x=fmt(x);OBJ.push(o);SEL=OBJ.length-1;changed(`Added ${name}.`)}
+function arrange(){const dims=OBJ.map(o=>place({...o,x:0,y:0}));const gap=3,total=dims.reduce((s,p)=>s+p.w,0)+gap*Math.max(0,OBJ.length-1);let cur=-total/2;
+ OBJ.forEach((o,i)=>{const w=dims[i].w;o.x=fmt(cur+w/2);o.y=0;cur+=w+gap})}
+function duplicateSel(){if(SEL<0)return;checkpoint();const s=OBJ[SEL];OBJ.push({...s,id:nid++,name:s.name+' copy',x:fmt(s.x+12)});SEL=OBJ.length-1;changed('Duplicated.')}
+const wrap=a=>((a+180)%360+360)%360-180;
+function nudge(act){if(SEL<0||!OBJ[SEL])return;checkpoint();const o=OBJ[SEL];
+ if(act==='up')o.lift=clamp(fmt(o.lift+2),0,S.bz);
+ else if(act==='down')o.lift=clamp(fmt(o.lift-2),0,S.bz);
+ else if(act==='fx')o.rx=wrap(o.rx+90);
+ else if(act==='fy')o.ry=wrap(o.ry+90);
+ else if(act==='tz')o.rz=wrap(o.rz+90);
+ else{const d=act==='cw'?-15:15;o.rz=wrap(o.rz+d)}
+ const msg={up:`Lifted to ${o.lift} mm.`,down:`Lowered to ${o.lift} mm.`,fx:`Flipped on X, now ${o.rx}°.`,fy:`Flipped on Y, now ${o.ry}°.`,tz:`Turned 90°, now ${o.rz}°.`}[act]||`Turned to ${o.rz}°.`;
+ changed(msg)}
+function deleteSel(){if(SEL<0)return;checkpoint();OBJ.splice(SEL,1);SEL=-1;changed('Removed.')}
+function centerSel(){if(SEL<0)return;checkpoint();OBJ[SEL].x=0;OBJ[SEL].y=0;changed('Centered.')}
+
+// ---------- UI refresh
+function status(msg){$('status').textContent=msg}
+function changed(msg){layers=[];PEN=[];gcode='';if(V)refreshScene();renderObjects();updateButtons();if(msg)status(msg)}
+function fitText(){if(!OBJ.length)return `Plate ${S.bx} × ${S.by} × ${S.bz} mm`;const bad=OBJ.filter(o=>!inside(place(o))).length;
+ return bad?`${bad} model${bad>1?'s':''} outside the plate`:`${OBJ.length} model${OBJ.length>1?'s':''} fit the plate`}
+function renderObjects(){const list=$('objectList');
+ list.innerHTML=OBJ.length?OBJ.map((o,i)=>{const p=place(o),ok=inside(p);
+  const acts=i===SEL?`<div class="acts"><button class="sm" data-act="up">Lift up</button><button class="sm" data-act="down">Lower</button><button class="sm" data-act="fx" title="Tip it over sideways">Flip X 90°</button><button class="sm" data-act="fy" title="Tip it over front to back">Flip Y 90°</button><button class="sm" data-act="tz" title="Quarter turn">Turn 90°</button><button class="sm" data-act="ccw">◀ 15°</button><button class="sm" data-act="cw">15° ▶</button></div>`:'';
+  return `<div class="card${i===SEL?' on':''}" data-i="${i}"><div class="row2"><b>${esc(o.name)}</b><span class="${ok?'meta':'bad'}">${ok?'fits':'outside plate'}</span></div><div class="meta">${dimStr(p)}</div>${acts}</div>`}).join('')
+  :'<p class="hint">No models yet. Add a shape above or import an STL file.</p>';
+ if(!list.dataset.bound){list.onclick=e=>{const b=e.target.closest('[data-act]');if(b){nudge(b.dataset.act);return}const c=e.target.closest('[data-i]');if(c)selectObj(+c.dataset.i)};list.dataset.bound='1'}
+ $('fitInfo').textContent=fitText()}
+function updateButtons(){const hasM=OBJ.length>0,penReady=!!(S.pen&&DRAW);
+ $('sliceBtn').disabled=!(hasM||penReady);
+ $('saveBtn').disabled=$('copyBtn').disabled=!gcode;
+ $('undoBtn').disabled=!HIST.u.length;$('redoBtn').disabled=!HIST.r.length;
+ const sel=SEL>=0;$('duplicateBtn').disabled=$('deleteBtn').disabled=$('centerBtn').disabled=!sel;
+ $('arrangeBtn').disabled=!hasM;
+ $('viewLayers').disabled=!(layers.length||PEN.length)}
+function selectObj(i){SEL=i;renderObjects();if(V){updateGizmo();highlight();v3draw()}updateButtons()}
+function setView(v){const is3=v!=='layers';$('v3').hidden=!is3;$('cv').hidden=is3;
+ $('view3').classList.toggle('on',is3);$('viewLayers').classList.toggle('on',!is3);
+ $('viewTop').hidden=$('viewAngle').hidden=!is3;
+ $('layerSlider').hidden=!(layers.length>1&&!S.pen);
+ if(is3&&V)v3draw();if(!is3)draw()}
+
+// ---------- settings UI
+function buildSettings(){let h='';
+ for(const [g,items] of GROUPS){h+=`<details data-g="${g}"${g==='Layers'||g==='Speed'?' open':''}><summary>${g}</summary>`;
+  for(const [k,l,,,,u] of items)h+=`<div class="frow"><label for="s_${k}">${l}</label><input id="s_${k}" type="number" step="any" value="${S[k]}"><small>${u}</small></div>`;
+  h+='</details>'}
+ $('advancedFields').innerHTML=h;
+ for(const [,items] of GROUPS)for(const [k] of items)$('s_'+k).onchange=e=>setSetting(k,parseFloat(e.target.value));
+ $('qualSel').innerHTML=Object.keys(QUAL).map(k=>`<option>${k}</option>`).join('');$('qualSel').value='Standard';
+ $('speedSel').innerHTML=Object.keys(SPEEDS).map(k=>`<option>${k}</option>`).join('');$('speedSel').value='Normal';
+ $('sg').value=loadedStart;$('eg').value=loadedEnd;
+ $('supSel').value=S.sup?(S.supStyle?'tree':'lines'):'off';
+ $('purgeSel').value=String(S.purge);
+ $('modeSel').value=String(S.pen);$('penStyleSel').value=String(S.penStyle);$('picStyleSel').value=String(S.imgMode)}
+let loadedStart=START_DEF,loadedEnd=END_DEF;
+function setSetting(k,v){if(!isFinite(v)||!(k in RANGE))return;const[a,b]=RANGE[k];S[k]=clamp(v,a,b);
+ const el=$('s_'+k);if(el)el.value=S[k];savePrefs();
+ if(k.startsWith('img')&&DRAW_SRC){retrace();if(S.pen)doSlice();else changed();return}
+ changed();applyMode()}
+function setMany(o){for(const k in o){if(!(k in RANGE))continue;const[a,b]=RANGE[k];S[k]=clamp(o[k],a,b);const el=$('s_'+k);if(el)el.value=S[k]}savePrefs();changed();applyMode()}
+function applyMode(){const pen=!!S.pen;
+ $('printOnly').hidden=pen;$('penOnly').hidden=!pen;$('gcodeBox').hidden=pen;
+ $('picBox').hidden=!(pen&&DRAW);$('picName').textContent=DRAWNAME;
+ $('modeSel').value=String(S.pen);
+ $('file').accept=pen?'image/*,video/*,.webm,.mp4,.mov':'.stl';
+ $('importText').textContent=pen?'Import picture or video':'Import STL file';
+ document.querySelectorAll('#advancedFields details').forEach(d=>{const g=d.dataset.g;d.hidden=pen?!(g==='Pen'||g==='Plate'):false})}
+
+// ---------- slicing geometry
+const K=p=>Math.round(p[0]*1000)+','+Math.round(p[1]*1000);
+function chain(segs){const m=new Map();segs.forEach((s,i)=>{for(const p of s){const k=K(p);if(!m.has(k))m.set(k,[]);m.get(k).push(i)}});
+ const u=new Uint8Array(segs.length),out=[];
+ for(let i=0;i<segs.length;i++){if(u[i])continue;u[i]=1;const L=[segs[i][0]],sk=K(segs[i][0]);let cur=segs[i][1],ck=K(cur);
+  while(ck!==sk){L.push(cur);const c=(m.get(ck)||[]).find(j=>!u[j]);if(c===undefined)break;u[c]=1;const s=segs[c];cur=K(s[0])===ck?s[1]:s[0];ck=K(cur)}
+  if(ck===sk&&L.length>2)out.push(L)}
+ return out}
+function area(L){let a=0;for(let i=0;i<L.length;i++){const p=L[i],q=L[(i+1)%L.length];a+=p[0]*q[1]-q[0]*p[1]}return a/2}
+function pip(p,L){let c=false;for(let i=0,j=L.length-1;i<L.length;j=i++){const a=L[i],b=L[j];if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])c=!c}return c}
+function sliceAt(a,z){const segs=[];for(let i=0;i<a.length;i+=9){const p=[];for(let e=0;e<3;e++){const A=i+e*3,B=i+((e+1)%3)*3;
+ if((a[A+2]<z)!==(a[B+2]<z)){const t=(z-a[A+2])/(a[B+2]-a[A+2]);p.push([a[A]+t*(a[B]-a[A]),a[A+1]+t*(a[B+1]-a[A+1])])}}
+ if(p.length===2)segs.push(p)}
+ const loops=chain(segs);
+ return loops.map(L=>{const d=loops.filter(o=>o!==L&&pip(L[0],o)).length,ar=area(L);return((d%2===0)===(ar>0))?L:L.slice().reverse()})}
+function offset(L,d){const n=L.length,r=[];for(let i=0;i<n;i++){const p=L[(i+n-1)%n],c=L[i],q=L[(i+1)%n];
+ let ax=c[0]-p[0],ay=c[1]-p[1],bx=q[0]-c[0],by=q[1]-c[1];const la=Math.hypot(ax,ay)||1,lb=Math.hypot(bx,by)||1;ax/=la;ay/=la;bx/=lb;by/=lb;
+ const n1=[-ay,ax],n2=[-by,bx];const k=Math.max(1+n1[0]*n2[0]+n1[1]*n2[1],.35);r.push([c[0]+d*(n1[0]+n2[0])/k,c[1]+d*(n1[1]+n2[1])/k])}
+ const a0=area(L),a1=area(r);return(Math.sign(a0)!==Math.sign(a1)||Math.abs(a1)<S.lw*S.lw)?null:r}
+function infillLines(polys,ang,sp){if(!polys.length)return[];const c=Math.cos(ang),s=Math.sin(ang);
+ const R=polys.map(L=>L.map(p=>[p[0]*c+p[1]*s,-p[0]*s+p[1]*c]));let lo=1e9,hi=-1e9;R.forEach(L=>L.forEach(p=>{lo=Math.min(lo,p[1]);hi=Math.max(hi,p[1])}));
+ const out=[];let flip=false;for(let y=lo+sp/2;y<hi;y+=sp){const xs=[];for(const L of R)for(let i=0,j=L.length-1;i<L.length;j=i++){const a=L[i],b=L[j];
+  if((a[1]<=y)!==(b[1]<=y))xs.push(a[0]+(y-a[1])/(b[1]-a[1])*(b[0]-a[0]))}
+  xs.sort((p,q)=>p-q);const row=[];for(let i=0;i+1<xs.length;i+=2)if(xs[i+1]-xs[i]>.2)row.push([xs[i],xs[i+1]]);if(flip)row.reverse();
+  for(const[x1,x2]of row){const P=[x1,y],Q=[x2,y];const seg=flip?[Q,P]:[P,Q];out.push(seg.map(p=>[p[0]*c-p[1]*s,p[0]*s+p[1]*c]))}flip=!flip}
+ return out}
+function rasterize(loops,nx,ny,cs){const gr=new Uint8Array(nx*ny),ed=[];
+ for(const Lp of loops)for(let i=0;i<Lp.length;i++)ed.push([Lp[i],Lp[(i+1)%Lp.length]]);
+ for(let j=0;j<ny;j++){const y=(j+.5)*cs,xs=[];
+  for(const[a,b]of ed)if((a[1]<=y)!==(b[1]<=y))xs.push(a[0]+(y-a[1])/(b[1]-a[1])*(b[0]-a[0]));
+  xs.sort((p,q)=>p-q);
+  for(let t=0;t+1<xs.length;t+=2){const k0=Math.max(0,Math.ceil(xs[t]/cs-.5)),k1=Math.min(nx-1,Math.floor(xs[t+1]/cs-.5));for(let k=k0;k<=k1;k++)gr[j*nx+k]=1}}
+ return gr}
+function supLines(gr,nx,ny,cs,sp,vert){const out=[];let flip=false;
+ const NL=vert?nx:ny,NP=vert?ny:nx,step=Math.max(1,Math.round(sp/cs));
+ const at=(li,p)=>vert?gr[p*nx+li]:gr[li*nx+p];
+ for(let li=Math.floor(step/2);li<NL;li+=step){const runs=[];let p=0;
+  while(p<NP){if(at(li,p)){let q=p;while(q+1<NP&&at(li,q+1))q++;runs.push([p,q]);p=q+1}else p++}
+  if(flip)runs.reverse();
+  for(const[p0,p1]of runs){const a=p0*cs,b=(p1+1)*cs,c=(li+.5)*cs;const P=[a,c],Q=[b,c];const seg=flip?[Q,P]:[P,Q];
+   out.push(seg.map(([u,v])=>vert?[v,u]:[u,v]))}
+  flip=!flip}
+ return out}
+function outsideMask(gr,nx,ny){const out=new Uint8Array(nx*ny),q=new Int32Array(nx*ny);let qh=0,qt=0;
+ const push=i=>{if(!out[i]&&!gr[i]){out[i]=1;q[qt++]=i}};
+ for(let k=0;k<nx;k++){push(k);push((ny-1)*nx+k)}
+ for(let j=0;j<ny;j++){push(j*nx);push(j*nx+nx-1)}
+ while(qh<qt){const i=q[qh++],j=(i/nx)|0,k=i-j*nx;
+  if(k>0)push(i-1);if(k<nx-1)push(i+1);if(j>0)push(i-nx);if(j<ny-1)push(i+nx)}
+ return out}
+function disk(cx,cy,r){
+ if(r<=S.lw*.6+1e-9)return[[[cx-r,cy],[cx+r,cy]]];
+ const P=[];for(let q=0;q<6;q++){const a=q*Math.PI/3,b=(q+1)*Math.PI/3;P.push([[cx+r*Math.cos(a),cy+r*Math.sin(a)],[cx+r*Math.cos(b),cy+r*Math.sin(b)]])}
+ for(let q=0;q<3;q++){const a=q*Math.PI/3;P.push([[cx+r*Math.cos(a),cy+r*Math.sin(a)],[cx-r*Math.cos(a),cy-r*Math.sin(a)]])}
+ return P}
+function treeLayer(gr,nx,ny,cs,sp){
+ const out=[],st=Math.max(1,Math.round(sp/cs)),r=Math.max(S.lw*.6,st*cs*.55);
+ for(let j0=0;j0<ny;j0+=st)for(let k0=0;k0<nx;k0+=st){
+  let hit=false;const j1=Math.min(ny,j0+st),k1=Math.min(nx,k0+st);
+  for(let j=j0;j<j1&&!hit;j++)for(let k=k0;k<k1;k++)if(gr[j*nx+k]){hit=true;break}
+  if(!hit)continue;
+  const cx=(k0+(k1-k0)/2)*cs,cy=(j0+(j1-j0)/2)*cs;
+  for(const sg of disk(cx,cy,r))out.push(sg)}
+ return out}
+function supports(L,all){const cs=.6,nx=Math.ceil(S.bx/cs),ny=Math.ceil(S.by/cs),N=nx*ny,nl=L.length,gap=Math.max(0,Math.round(S.supGap));
+ const mask=all.map(loops=>rasterize(loops,nx,ny,cs));
+ const sup=L.map(()=>new Uint8Array(N));
+ for(let i=1;i<nl;i++){const m=mask[i],b=mask[i-1];
+  for(let c=0;c<N;c++){if(!m[c]||b[c])continue;
+   for(let t=i-1-gap;t>=0&&!mask[t][c];t--)sup[t][c]=1}}
+ // supports only in air that connects to the outside of the part (never inside cavities, gaps or enclosed hollows)
+ for(let t=0;t<nl;t++){const om=outsideMask(mask[t],nx,ny),st=sup[t];for(let c=0;c<N;c++)if(!om[c])st[c]=0}
+ const nl1=Math.max(1,nl-1);
+ L.forEach((Lr,i)=>{const f=i/nl1;
+  if(S.supStyle===1){for(const sg of treeLayer(sup[i],nx,ny,cs,S.supSp*(1+2*(1-f))))Lr.sup.push(sg)}
+  else{for(const sg of supLines(sup[i],nx,ny,cs,S.supSp,i%2===1))Lr.sup.push(sg)}})}
+
+// ---------- slicing
+function doSlice(){
+ if(S.pen){if(!DRAW&&!OBJ.length){status('Add a model or a picture first.');return}
+  if(!OBJ.length){layers=[];gen();finishSlice();return}}
+ const P=OBJ.map(place);
+ if(!S.pen&&!P.length){status('Add a model first.');return}
+ if(!S.pen&&P.some(p=>!inside(p))){status('A model is outside the plate. Move it, shrink it, or press Arrange all.');return}
+ let H=0;P.forEach(p=>{H=Math.max(H,p.h)});
+ const zs=[];let z=S.firstH;while(z<=H+1e-6){zs.push(z);z+=S.layerH}
+ if(!zs.length){status('The model is too short to slice.');return}
+ const L=zs.map((z,i)=>({z,h:i?S.layerH:S.firstH,walls:[],inf:[],sup:[]}));
+ const all=zs.map(()=>[]);
+ P.forEach(p=>{zs.forEach((z,i)=>{
+  const lay=L[i],zm=z-lay.h/2;
+  if(zm>p.h+1e-6)return;
+  const loops=sliceAt(p.a,zm);if(!loops.length)return;
+  for(const Lp of loops)all[i].push(Lp);
+  for(let w=0;w<S.walls;w++)for(const Lp of loops){const o=offset(Lp,S.lw*(w+.5));if(o)lay.walls.push({w,L:o})}
+  const reg=[];for(const Lp of loops){const o=offset(Lp,S.lw*(S.walls-.2));if(o)reg.push(o)}
+  const solid=i<S.bot||zm>p.h-S.top*S.layerH;
+  const dens=solid?1:Math.min(S.infill/100,1);
+  if(dens>0)for(const s of infillLines(reg,(i%2?1:-1)*Math.PI/4,solid?S.lw*.95:S.lw/dens))lay.inf.push(s)})});
+ if(S.sup&&!S.pen)supports(L,all);
+ layers=L;
+ gen();
+ finishSlice()}
+function finishSlice(){const sl=$('layerSlider');sl.max=Math.max(0,layers.length-1);sl.value=sl.max;
+ if(V)v3path();setView('3d');updateButtons()}
+
+// ---------- G-code
+function gen(){
+ if(S.pen){penGen();return}
+ const o=[],f=x=>x.toFixed(3);
+ const fill=t=>t.replace(/\{(\w+)\}/g,(_,k)=>S[k]??'').split('\n').filter(l=>S.bed>0||!/^M1(40|90)\b/.test(l)).join('\n');
+ o.push('; Sliced with MiniSlice (unofficial, not affiliated with Toybox)',fill($('sg').value));
+ let x=0,y=0,e=0,ret=false,time=0,tot=0,curZ=0;
+ const mv=(px,py,F,ex)=>{const d=Math.hypot(px-x,py-y);time+=d/F;
+  if(ex!==undefined){e+=d*ex;tot+=d*ex;o.push(`G1 X${f(px+S.gx)} Y${f(py+S.gy)} E${f(e)} F${F*60}`)}
+  else o.push(`G0 X${f(px+S.gx)} Y${f(py+S.gy)} F${F*60}`);x=px;y=py};
+ const trav=(px,py,noHop)=>{const d=Math.hypot(px-x,py-y);if(d<.01)return;
+  if(d>2){if(S.ret>0&&!ret){e-=S.ret;o.push(`G1 E${f(e)} F${S.rets*60}`);ret=true}
+   if(S.hop>0&&!noHop){o.push(`G0 Z${f(curZ+S.hop)} F600`);mv(px,py,S.travel);o.push(`G0 Z${f(curZ)} F600`);return}}
+  mv(px,py,S.travel)};
+ const unret=()=>{if(ret){e+=S.ret;o.push(`G1 E${f(e)} F${S.rets*60}`);ret=false}};
+ const purge=safeZ=>{const Fp=Math.min(S.fspeed,S.maxFlow/(S.lw*S.firstH));
+  const pts=[[4,2],[44,2],[44,4.5],[4,4.5],[4,7],[44,7]];let Ln=0;for(let j=1;j<pts.length;j++)Ln+=Math.hypot(pts[j][0]-pts[j-1][0],pts[j][1]-pts[j-1][1]);
+  o.push('; purge and wipe',`G0 Z${f(safeZ)} F600`);trav(pts[0][0],pts[0][1],true);o.push('G0 Z0.200 F600');unret();
+  for(let j=1;j<pts.length;j++)mv(pts[j][0],pts[j][1],Fp,S.plen/Ln);
+  mv(pts[pts.length-1][0],pts[pts.length-1][1]+3,S.travel);o.push(`G0 Z${f(safeZ)} F600`)};
+ if(S.purge&1)purge(2);
+ layers.forEach((Lr,i)=>{curZ=Lr.z;
+  const k=S.lw*Lr.h/(Math.PI*(S.fd/2)**2)*S.flow/100;
+  let len=0;for(const q of Lr.walls)for(let j=0;j<q.L.length;j++){const a=q.L[j],b=q.L[(j+1)%q.L.length];len+=Math.hypot(b[0]-a[0],b[1]-a[1])}
+  for(const s of Lr.inf.concat(Lr.sup))len+=Math.hypot(s[1][0]-s[0][0],s[1][1]-s[0][1]);
+  let F=Math.min(i?S.speed:S.fspeed,S.maxFlow/(S.lw*Lr.h));
+  if(S.minT>0&&len>0&&len/F<S.minT)F=Math.max(5,len/S.minT);
+  o.push(`;LAYER ${i}`);
+  if(i===S.fanL-1)o.push(`M106 S${Math.round(S.fan*2.55)}`);
+  if(i===0)o.push('M107');
+  o.push(`G0 Z${f(Lr.z)} F600`);
+  for(let w=0;w<S.walls;w++)for(const q of Lr.walls.filter(q=>q.w===w)){let b=0,bd=1e9;q.L.forEach((p,j)=>{const d=Math.hypot(p[0]-x,p[1]-y);if(d<bd){bd=d;b=j}});
+   const P=q.L.slice(b).concat(q.L.slice(0,b));trav(P[0][0],P[0][1]);unret();for(let j=1;j<=P.length;j++){const p=P[j%P.length];mv(p[0],p[1],F,k)}}
+  for(const s of Lr.inf.concat(Lr.sup)){const d0=Math.hypot(s[0][0]-x,s[0][1]-y),d1=Math.hypot(s[1][0]-x,s[1][1]-y),t=d1<d0?[s[1],s[0]]:s;trav(t[0][0],t[0][1]);unret();mv(t[1][0],t[1][1],F,k)}
+ });
+ if(S.purge&2)purge(layers.length?layers[layers.length-1].z+2:5);
+ o.push(fill($('eg').value));gcode=o.join('\n');
+ const mins=Math.round(time/60+layers.length*.1),gw=tot*Math.PI*(S.fd/2)**2/1000*1.24;
+ status(`${layers.length} layers · about ${Math.floor(mins/60)} h ${mins%60} min · ${(tot/1000).toFixed(2)} m of filament (about ${gw.toFixed(1)} g)`)}
+
+// ---------- pen drawing
+function penGen(){
+ const L0=layers.find(l=>l.walls.length||l.inf.length);
+ PEN=[];
+ if(!L0&&!DRAW){gcode='';status('Nothing to draw. Add a model or a picture first.');return}
+ const strokes=[];
+ if(DRAW){for(const st of DRAW)strokes.push(st.slice())}
+ else{if(S.penStyle!==2)for(const q of L0.walls)strokes.push([...q.L,q.L[0]]);
+  if(S.penStyle!==1)for(const s2 of L0.inf)strokes.push([s2[0],s2[1]])}
+ const left=strokes.slice(),ordered=[];let cx=0,cy=0;
+ const dist=p=>Math.hypot(p[0]-cx,p[1]-cy);
+ while(left.length){let bi=0,bd=1e9,rev=false;
+  left.forEach((st,i)=>{const d0=dist(st[0]),d1=dist(st[st.length-1]);const d=Math.min(d0,d1);if(d<bd){bd=d;bi=i;rev=d1<d0}});
+  let st=left.splice(bi,1)[0];
+  if(rev)st=st.slice().reverse();
+  const closed=st.length>2&&st[0][0]===st[st.length-1][0]&&st[0][1]===st[st.length-1][1];
+  if(closed){let k=0,kd=1e9;st.forEach((p,j)=>{if(j<st.length-1){const d=dist(p);if(d<kd){kd=d;k=j}}});
+   const ring=st.slice(0,-1);st=ring.slice(k).concat(ring.slice(0,k));st.push(st[0])}
+  ordered.push(st);const e=st[st.length-1];cx=e[0];cy=e[1]}
+ PEN=ordered;
+ const o=['; MiniSlice pen drawing. No filament, heaters off.','M104 S0','M140 S0','M107','G28','G90',`G0 Z${S.penUp} F1200`];
+ const X=p=>(p[0]+S.gx).toFixed(3),Y=p=>(p[1]+S.gy).toFixed(3);
+ let len=0;
+ for(const st of ordered){
+  o.push(`G0 X${X(st[0])} Y${Y(st[0])} F${S.penTravel*60}`,`G1 Z${S.penDown} F300`);
+  for(let j=1;j<st.length;j++){o.push(`G1 X${X(st[j])} Y${Y(st[j])} F${S.penSpd*60}`);len+=Math.hypot(st[j][0]-st[j-1][0],st[j][1]-st[j-1][1])}
+  o.push(`G0 Z${S.penUp}`)}
+ o.push('G0 X0 Y0',`G0 Z${S.penUp}`,'M84');
+ gcode=o.join('\n');
+ const mins=Math.max(1,Math.round((len/S.penSpd+ordered.length*.5)/60));
+ status(`Pen: ${ordered.length} strokes, about ${mins} min. Home the printer first and set Pen down Z so the tip just touches the paper.`)}
+
+function traceGray(gray,cw,ch,W,Hm){
+ const mask=new Uint8Array(cw*ch);
+ if(S.imgMode===1){const et=(255-S.imgThr)*1.5;
+  for(let r=1;r<ch-1;r++)for(let k=1;k<cw-1;k++){const i=r*cw+k;
+   const gx=-gray[i-cw-1]+gray[i-cw+1]-2*gray[i-1]+2*gray[i+1]-gray[i+cw-1]+gray[i+cw+1];
+   const gy=-gray[i-cw-1]-2*gray[i-cw]-gray[i-cw+1]+gray[i+cw-1]+2*gray[i+cw]+gray[i+cw+1];
+   if(Math.hypot(gx,gy)>et)mask[i]=1}}
+ else for(let i=0;i<cw*ch;i++)mask[i]=gray[i]<S.imgThr?1:0;
+ const rows=Math.max(1,Math.round(Hm/S.imgSp)),cx=S.bx/2,cy=S.by/2,mmX=W/cw;
+ const strokes=[];
+ for(let rr=0;rr<rows;rr++){
+  const fr=Math.min(ch-1,Math.floor((rr+.5)*ch/rows)),Y=cy+Hm/2-(rr+.5)*Hm/rows;
+  let k=0;
+  while(k<cw){if(mask[fr*cw+k]){let q=k;while(q+1<cw&&mask[fr*cw+q+1])q++;
+    if((q-k+1)*mmX>=.4)strokes.push([[cx-W/2+k*mmX,Y],[cx-W/2+(q+1)*mmX,Y]]);
+    k=q+1}else k++}
+ }
+ return strokes}
+function traceDrawing(src){
+ const sw=src.videoWidth||src.naturalWidth||src.width,sh=src.videoHeight||src.naturalHeight||src.height;
+ if(!sw||!sh)throw new Error('the picture has no size yet');
+ const W=S.imgW,Hm=W*sh/sw,cw=Math.min(400,Math.round(W/.4)),ch=Math.max(1,Math.round(Hm/.4));
+ const c=document.createElement('canvas');c.width=cw;c.height=ch;const x=c.getContext('2d');
+ x.fillStyle='#fff';x.fillRect(0,0,cw,ch);x.drawImage(src,0,0,cw,ch);
+ const d=x.getImageData(0,0,cw,ch).data,gray=new Float32Array(cw*ch);
+ for(let i=0;i<cw*ch;i++)gray[i]=d[i*4]*.3+d[i*4+1]*.59+d[i*4+2]*.11;
+ return traceGray(gray,cw,ch,W,Hm)}
+function retrace(){if(!DRAW_SRC)return;try{DRAW=traceDrawing(DRAW_SRC)}catch(err){status('Could not trace picture: '+err.message)}}
+function importDrawing(file){
+ const url=URL.createObjectURL(file),vid=/^video\//.test(file.type)||/\.(webm|mp4|mov|ogv)$/i.test(file.name);
+ const done=src=>{DRAW_SRC=src;DRAWNAME=file.name;retrace();
+  if(!DRAW||!DRAW.length){status('No lines found. Try a higher Picture darkness cutoff or a different picture.');applyMode();return}
+  applyMode();doSlice();status(status()+' Picture imported.')};
+ if(vid){const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='auto';v.src=url;
+  v.onloadeddata=()=>{const t=Math.max(0,Math.min(S.imgT,(v.duration||0)-.05));if(t<=.01)done(v);else{v.onseeked=()=>done(v);v.currentTime=t}};
+  v.onerror=()=>status('Could not open that video. Try a .webm or .mp4 file.')}
+ else{const im=new Image();im.onload=()=>done(im);im.onerror=()=>status('Could not open that picture.');im.src=url}}
+function clearDrawing(){DRAW=null;DRAW_SRC=null;DRAWNAME='';applyMode();changed('Picture removed.')}
+
+// ---------- 2D layers view
+function draw(){const c=$('cv'),cx=c.getContext('2d'),W=c.width,sc=W/Math.max(S.bx,S.by),n=+$('layerSlider').value;
+ const cs=getComputedStyle(document.documentElement);cx.clearRect(0,0,W,W);cx.lineWidth=1.2;
+ const pr=(Lr,col)=>{cx.strokeStyle=col;cx.beginPath();
+  for(const q of Lr.walls){q.L.forEach((p,j)=>j?cx.lineTo(p[0]*sc,W-p[1]*sc):cx.moveTo(p[0]*sc,W-p[1]*sc));cx.closePath()}
+  for(const s of Lr.inf){cx.moveTo(s[0][0]*sc,W-s[0][1]*sc);cx.lineTo(s[1][0]*sc,W-s[1][1]*sc)}
+  for(const s of Lr.sup){cx.moveTo(s[0][0]*sc,W-s[0][1]*sc);cx.lineTo(s[1][0]*sc,W-s[1][1]*sc)}
+  cx.stroke()};
+ const old=cs.getPropertyValue('--line').trim()||'#ccc',ln='#0f766e';
+ cx.strokeStyle=old;cx.setLineDash([4,4]);cx.strokeRect(0,W-S.by*sc,S.bx*sc,S.by*sc);cx.setLineDash([]);
+ if(S.pen){cx.strokeStyle='#1d6fd1';cx.beginPath();for(const st of PEN)st.forEach((p,j)=>j?cx.lineTo(p[0]*sc,W-p[1]*sc):cx.moveTo(p[0]*sc,W-p[1]*sc));cx.stroke();return}
+ if(layers[n-1])pr(layers[n-1],old);if(layers[n])pr(layers[n],ln)}
+
+// ---------- 3D view
+let Pm=new Map(),pd=0;
+function initScene(){const T=window.THREE,el=$('v3');if(!T){el.textContent='The 3D view could not load. Check your internet connection.';return}
+ const r=new T.WebGLRenderer({antialias:true,alpha:true});r.setPixelRatio(Math.min(devicePixelRatio||1,2));el.appendChild(r.domElement);
+ const sc=new T.Scene(),cam=new T.PerspectiveCamera(40,1,1,3000);cam.up.set(0,0,1);
+ sc.add(new T.AmbientLight(0xffffff,.65));const dl=new T.DirectionalLight(0xffffff,.8);dl.position.set(1,-1.5,2);sc.add(dl);
+ V={T,r,sc,cam,th:-.8,ph:1,d:Math.max(S.bx,S.by,S.bz)*3,grp:new T.Group(),hgrp:new T.Group(),meshes:[],path:null,drag:null,h:null,handles:[]};
+ sc.add(V.grp);sc.add(V.hgrp);
+ bindPointer(el);
+ el.onwheel=e=>{e.preventDefault();V.d=Math.min(1500,Math.max(60,V.d*Math.exp(e.deltaY*.001)));v3draw()};
+ addEventListener('resize',()=>v3draw());
+ refreshScene()}
+const pinch=()=>{if(Pm.size!==2)return 0;const[a,b]=[...Pm.values()];return Math.hypot(a[0]-b[0],a[1]-b[1])};
+function bindPointer(el){
+ el.onpointerdown=e=>{el.setPointerCapture(e.pointerId);V.start=[e.clientX,e.clientY];Pm.set(e.pointerId,[e.clientX,e.clientY]);pd=pinch();V.drag=null;V.h=null;
+  if(Pm.size===1){
+   const hh=(SEL>=0&&V.handles.length)?ray(e).intersectObjects(V.handles,false):[];
+   if(hh.length){const o=OBJ[SEL],p=place(o),q=gp(e);
+    checkpoint();
+    V.h={type:hh[0].object.userData.h,idx:SEL,x0:e.clientX,y0:e.clientY,q0:q,cx:p.cx,cy:p.cy,w0:p.w,d0:p.d,h0:p.h,moved:false,o0:{x:o.x,y:o.y,lift:o.lift||0,sx:o.sx,sy:o.sy,sz:o.sz,rz:o.rz}};return}
+   if(V.meshes.length){const hits=ray(e).intersectObjects(V.meshes,false);if(hits.length){const idx=hits[0].object.userData.idx;const q=gp(e);
+    if(q){checkpoint();V.drag={idx,x0:q.x,y0:q.y,dx:0,dy:0,moved:false}}}}
+  }};
+ el.onpointermove=e=>{if(!Pm.has(e.pointerId))return;const o=Pm.get(e.pointerId);Pm.set(e.pointerId,[e.clientX,e.clientY]);
+  if(V.h&&Pm.size===1){V.h.moved=true;applyHandle(e);return}
+  if(V.drag&&Pm.size===1){const q=gp(e);if(q){const d=V.drag;d.dx=q.x-d.x0;d.dy=q.y-d.y0;if(Math.abs(d.dx)+Math.abs(d.dy)>.3)d.moved=true;V.meshes[d.idx].position.set(d.dx,d.dy,0);v3draw()}return}
+  if(Pm.size===1){V.th-=(e.clientX-o[0])*.01;V.ph=Math.min(1.65,Math.max(.1,V.ph-(e.clientY-o[1])*.01))}
+  else{const n=pinch();if(pd&&n)V.d=Math.min(1500,Math.max(60,V.d*pd/n));pd=n}
+  v3draw()};
+ el.onpointerup=el.onpointercancel=e=>{Pm.delete(e.pointerId);pd=pinch();
+  const tap=V.start&&Math.hypot(e.clientX-V.start[0],e.clientY-V.start[1])<8;
+  if(V.h){const h=V.h;V.h=null;if(h.moved){changed('Updated. Press Slice to see the change.')}else{HIST.u.pop();updateButtons()}return}
+  if(V.drag){const d=V.drag;V.drag=null;
+   if(d.moved){const o=OBJ[d.idx];if(o){o.x=fmt(o.x+d.dx);o.y=fmt(o.y+d.dy)}SEL=d.idx;changed('Moved. Press Slice to see the change.')}
+   else{HIST.u.pop();selectObj(d.idx)}
+   return}
+  if(tap&&Pm.size===0)selectObj(-1)};
+}
+function ray(e){const R=$('v3').getBoundingClientRect(),T=V.T,rc=new T.Raycaster();rc.setFromCamera(new T.Vector2((e.clientX-R.left)/R.width*2-1,-((e.clientY-R.top)/R.height)*2+1),V.cam);return rc}
+function gp(e){const T=V.T;return ray(e).ray.intersectPlane(new T.Plane(new T.Vector3(0,0,1),0),new T.Vector3())}
+function applyHandle(e){const H=V.h,o=OBJ[H.idx];if(!o)return;
+ const q=gp(e),dy=e.clientY-H.y0,c=v=>Math.round(v*10)/10;
+ switch(H.type){
+  case 'mx':if(q&&H.q0)o.x=c(H.o0.x+(q.x-H.q0.x));break;
+  case 'my':if(q&&H.q0)o.y=c(H.o0.y+(q.y-H.q0.y));break;
+  case 'lift':o.lift=clamp(c(H.o0.lift-dy*.15),0,S.bz);break;
+  case 'sw':if(q&&H.q0){const D=(q.x-H.q0.x)*2;o.sx=Math.max(20,Math.round(H.o0.sx*Math.max(.05,(H.w0+D)/H.w0)))}break;
+  case 'sl':if(q&&H.q0){const D=(q.y-H.q0.y)*2;o.sy=Math.max(20,Math.round(H.o0.sy*Math.max(.05,(H.d0+D)/H.d0)))}break;
+  case 'sh':{const D=-dy*.15;o.sz=Math.max(20,Math.round(H.o0.sz*Math.max(.05,(H.h0+D)/H.h0)))}break;
+  case 'rot':if(q&&H.q0){const a0=Math.atan2(H.q0.y-H.cy,H.q0.x-H.cx),a1=Math.atan2(q.y-H.cy,q.x-H.cx);
+   let r=H.o0.rz+(a1-a0)*180/Math.PI;r=((r+180)%360+360)%360-180;o.rz=Math.round(r)}break;
+ }
+ changed()}
+function refreshScene(){if(!V)return;const T=V.T,gr=V.grp;
+ while(gr.children.length){const c=gr.children.pop();if(c.geometry)c.geometry.dispose()}
+ V.meshes=[];V.path=null;V.drag=null;
+ const bx=S.bx,by=S.by,bz=S.bz;
+ const pl=new T.Mesh(new T.PlaneGeometry(bx,by),new T.MeshBasicMaterial({color:0x888888,transparent:true,opacity:.25,side:T.DoubleSide}));pl.position.set(bx/2,by/2,0);gr.add(pl);
+ const bo=new T.LineSegments(new T.EdgesGeometry(new T.BoxGeometry(bx,by,bz)),new T.LineBasicMaterial({color:0x0f766e}));bo.position.set(bx/2,by/2,bz/2);gr.add(bo);
+ OBJ.forEach((o,idx)=>{const p=place(o),ge=new T.BufferGeometry();
+  ge.setAttribute('position',new T.BufferAttribute(p.a,3));ge.computeVertexNormals();
+  const m=new T.Mesh(ge,new T.MeshLambertMaterial({color:inside(p)?0x6c9bd1:0xe03131,side:T.DoubleSide}));
+  m.userData.idx=idx;V.meshes.push(m);gr.add(m)});
+ if(layers.length||PEN.length)v3path();
+ updateGizmo();highlight();renderObjects();v3draw()}
+function buildGizmo(T,hg,o,p){
+ const cx=p.cx,cy=p.cy,w=p.w,d=p.d,h=p.h,lift=o.lift||0;
+ const mk=(geo,col,hd,x,y,z,rot)=>{const m=new T.Mesh(geo,new T.MeshBasicMaterial({color:col,depthTest:false,transparent:true,opacity:.95}));
+  m.position.set(x,y,z);m.renderOrder=999;if(rot)rot(m);m.userData.h=hd;hg.add(m);V.handles.push(m);return m};
+ const hit=(geo,hd,x,y,z,rot)=>{const m=new T.Mesh(geo,new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));
+  m.position.set(x,y,z);if(rot)rot(m);m.userData.h=hd;hg.add(m);V.handles.push(m);return m};
+ const RED=0xe03131,GRN=0x2f9e44,BLU=0x1c7ed6,GRY=0x495057;
+ const arrow=(col,hd,bx,by,bz,dir)=>{const L=6,v=dir==='x'?[1,0,0]:dir==='y'?[0,1,0]:[0,0,1];
+  const rot=m=>{if(dir==='x')m.rotation.z=-Math.PI/2;else if(dir==='z')m.rotation.x=Math.PI/2};
+  mk(new T.CylinderGeometry(.6,.6,L,8),col,hd,bx+v[0]*L/2,by+v[1]*L/2,bz+v[2]*L/2,rot);
+  mk(new T.ConeGeometry(2,3,12),col,hd,bx+v[0]*(L+1.5),by+v[1]*(L+1.5),bz+v[2]*(L+1.5),rot);
+  hit(new T.CylinderGeometry(2.6,2.6,L+3,10),hd,bx+v[0]*(L+3)/2,by+v[1]*(L+3)/2,bz+v[2]*(L+3)/2,rot)};
+ const box=(col,hd,x,y,z)=>{mk(new T.BoxGeometry(4,4,4),col,hd,x,y,z);hit(new T.BoxGeometry(7,7,7),hd,x,y,z)};
+ const zm=Math.max(h/2,1.6);
+ arrow(RED,'mx',cx+w/2+8,cy,.6,'x');
+ arrow(GRN,'my',cx,cy+d/2+8,.6,'y');
+ arrow(GRY,'lift',cx-w/2-8,cy,lift,'z');
+ box(RED,'sw',cx+w/2+3,cy,zm);
+ box(GRN,'sl',cx,cy+d/2+3,zm);
+ box(BLU,'sh',cx,cy,h+3);
+ const R=Math.max(w,d)/2+14;
+ mk(new T.TorusGeometry(R,.6,8,48,Math.PI*1.5),GRN,'rot',cx,cy,.6);
+ hit(new T.TorusGeometry(R,2.6,8,48,Math.PI*1.5),'rot',cx,cy,.6);
+}
+function updateGizmo(){if(!V)return;const T=V.T,hg=V.hgrp;
+ while(hg.children.length){const c=hg.children.pop();if(c.geometry)c.geometry.dispose()}
+ V.handles=[];
+ if(SEL>=0&&OBJ[SEL])buildGizmo(T,hg,OBJ[SEL],place(OBJ[SEL]))}
+function highlight(){if(V&&V.meshes)V.meshes.forEach(m=>m.material.emissive&&m.material.emissive.setHex(m.userData.idx===SEL?0x3a3a3a:0x000000))}
+function v3draw(){if(!V)return;const el=$('v3'),w=el.clientWidth,hh=el.clientHeight;if(!w||!hh)return;const{r,sc,cam}=V;r.setSize(w,hh,false);cam.aspect=w/hh;cam.updateProjectionMatrix();
+ const t=[S.bx/2,S.by/2,S.bz/3];cam.position.set(t[0]+V.d*Math.sin(V.ph)*Math.cos(V.th),t[1]+V.d*Math.sin(V.ph)*Math.sin(V.th),t[2]+V.d*Math.cos(V.ph));cam.lookAt(t[0],t[1],t[2]);r.render(sc,cam)}
+function v3path(){if(!V)return;const T=V.T,gr=V.grp;
+ if(V.path){gr.remove(V.path);V.path.geometry.dispose();V.path=null}
+ if(S.pen){const pp=[],pc=new T.Color(0x1d6fd1);
+  for(const st of PEN)for(let j=1;j<st.length;j++)pp.push(st[j-1][0],st[j-1][1],.5,st[j][0],st[j][1],.5);
+  if(!pp.length)return;
+  const g2=new T.BufferGeometry();g2.setAttribute('position',new T.Float32BufferAttribute(pp,3));
+  V.path=new T.LineSegments(g2,new T.LineBasicMaterial({color:pc}));V.cnt=layers.map(()=>pp.length/3);gr.add(V.path);V.meshes.forEach(m=>m.visible=false);V.path.geometry.setDrawRange(0,pp.length/3);v3draw();return}
+ if(!layers.length)return;
+ const pos=[],col=[],cnt=[],cw=new T.Color(0xf0594a),ci=new T.Color(0xf5a623),cs=new T.Color(0x5aa0c8);
+ const add=(a,b,z,c)=>{pos.push(a[0],a[1],z,b[0],b[1],z);col.push(c.r,c.g,c.b,c.r,c.g,c.b)};
+ for(const Lr of layers){for(const q of Lr.walls){const P=q.L;for(let i=0;i<P.length;i++)add(P[i],P[(i+1)%P.length],Lr.z,cw)}
+  for(const s of Lr.inf)add(s[0],s[1],Lr.z,ci);for(const s of Lr.sup)add(s[0],s[1],Lr.z,cs);cnt.push(pos.length/3)}
+ const ge=new T.BufferGeometry();ge.setAttribute('position',new T.Float32BufferAttribute(pos,3));ge.setAttribute('color',new T.Float32BufferAttribute(col,3));
+ V.path=new T.LineSegments(ge,new T.LineBasicMaterial({vertexColors:true}));V.cnt=cnt;gr.add(V.path);V.meshes.forEach(m=>m.visible=false);v3range()}
+function v3range(){if(V&&V.path){const n=+$('layerSlider').value;V.path.geometry.setDrawRange(0,(V.cnt&&V.cnt[n])||0);v3draw()}}
+function camPreset(k){if(!V)return;if(k==='top'){V.th=-Math.PI/2;V.ph=.01;V.d=Math.max(S.bx,S.by,S.bz)*2.2}else{V.th=-.8;V.ph=1;V.d=Math.max(S.bx,S.by,S.bz)*3}v3draw()}
+
+// ---------- save / copy
+async function saveGcode(){if(!gcode)return;const base=(OBJ[0]&&OBJ[0].name||'print').replace(/[^\w.-]+/g,'_')||'print';
+ try{if(window.claude&&claude.use){const d=await claude.use('downloads');if(d){await d.save({filename:base+'.txt',data:new TextEncoder().encode(gcode)});status('Saved. Rename the file from .txt to .gcode.');return}}}catch(e){}
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([gcode],{type:'text/plain'}));a.download=base+'.gcode';document.body.appendChild(a);a.click();a.remove();status('Saved '+base+'.gcode');}
+
+// ---------- wiring
+function wire(){
+ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b===t));
+  $('tabModels').hidden=t.dataset.tab!=='tabModels';$('tabSettings').hidden=t.dataset.tab!=='tabSettings'});
+ document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>addModel(SHNAME[b.dataset.s],SH[b.dataset.s]()));
+ $('file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(S.pen)importDrawing(f);
+  else{try{addModel(f.name.replace(/\.stl$/i,''),parse(await f.arrayBuffer()))}catch(err){status('Could not read that file.')}}};
+ $('sliceBtn').onclick=()=>{status('Slicing…');setTimeout(()=>{try{doSlice()}catch(err){status('Slicing failed: '+err.message)}},30)};
+ $('saveBtn').onclick=saveGcode;
+ $('copyBtn').onclick=async()=>{try{await navigator.clipboard.writeText(gcode);status('G-code copied.')}catch(e){status('Copy was blocked here. Use Save G-code instead.')}};
+ $('undoBtn').onclick=undo;$('redoBtn').onclick=redo;
+ $('duplicateBtn').onclick=duplicateSel;$('deleteBtn').onclick=deleteSel;$('centerBtn').onclick=centerSel;
+ $('arrangeBtn').onclick=()=>{if(!OBJ.length)return;checkpoint();arrange();changed('Arranged.')};
+ $('view3').onclick=()=>setView('3d');$('viewLayers').onclick=()=>setView('layers');
+ $('viewTop').onclick=()=>camPreset('top');$('viewAngle').onclick=()=>camPreset('angle');
+ $('layerSlider').oninput=()=>{const n=+$('layerSlider').value;if(V)v3range();draw();if(layers[n])status(`Layer ${n+1} of ${layers.length} · height ${layers[n].z.toFixed(2)} mm`)};
+ $('modeSel').onchange=()=>setSetting('pen',+$('modeSel').value);
+ $('qualSel').onchange=()=>setMany(QUAL[$('qualSel').value]);
+ $('speedSel').onchange=()=>{const k=$('speedSel').value;setMany(SPEEDS[k]);$('speedNote').textContent=SPEED_NOTE[k]||''};
+ $('supSel').onchange=()=>{const v=$('supSel').value;setMany(v==='off'?{sup:0}:{sup:1,supStyle:v==='tree'?1:0})};
+ $('purgeSel').onchange=()=>setSetting('purge',+$('purgeSel').value);
+ $('penStyleSel').onchange=()=>setSetting('penStyle',+$('penStyleSel').value);
+ $('picStyleSel').onchange=()=>setSetting('imgMode',+$('picStyleSel').value);
+ $('picRemove').onclick=clearDrawing;
+ $('advToggle').onchange=()=>{$('advanced').hidden=!$('advToggle').checked};
+ $('resetBtn').onclick=()=>{setMany(DEF);$('sg').value=START_DEF;$('eg').value=END_DEF;savePrefs();status('Settings reset to the defaults.')};
+ $('sg').oninput=savePrefs;$('eg').oninput=savePrefs;
+ $('helpBtn').onclick=()=>{$('help').hidden=false};$('helpClose').onclick=()=>{$('help').hidden=true};
+ $('help').onclick=e=>{if(e.target===$('help'))$('help').hidden=true};
+ addEventListener('keydown',e=>{const t=(document.activeElement&&document.activeElement.tagName)||'';if(/INPUT|TEXTAREA|SELECT/.test(t))return;
+  const mod=e.ctrlKey||e.metaKey,k=(e.key||'').toLowerCase();
+  if(mod&&k==='z'){e.preventDefault();e.shiftKey?redo():undo()}
+  else if(mod&&k==='y'){e.preventDefault();redo()}
+  else if(mod&&k==='d'){e.preventDefault();duplicateSel()}
+  else if(e.key==='Delete'||e.key==='Backspace'){if(SEL>=0){e.preventDefault();deleteSel()}}
+  else if(e.key==='PageUp'&&SEL>=0){e.preventDefault();nudge('up')}
+  else if(e.key==='PageDown'&&SEL>=0){e.preventDefault();nudge('down')}
+  else if((e.key==='r'||e.key==='R')&&SEL>=0){nudge('tz')}
+  else if(e.key==='['&&SEL>=0){nudge('ccw')}
+  else if(e.key===']'&&SEL>=0){nudge('cw')}
+  else if(e.key==='Escape'){selectObj(-1)}});
+ $('picRemove').onclick=clearDrawing;
+}
+
+// ---------- start
+(function start(){
+ const saved=loadPrefs();
+ if(saved){loadedStart=saved.start||START_DEF;loadedEnd=saved.end||END_DEF}
+ buildSettings();
+ wire();
+ applyMode();
+ initScene();
+ renderObjects();
+ updateButtons();
+ setView('3d');
+ status('Add a shape or import an STL file to begin. Settings are remembered on this device.');
+})();
+</script>
+</body></html>
